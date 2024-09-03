@@ -3,7 +3,7 @@
 Programa: Compilador Macutunda
 Autor: Alfredo Macutunda
 Data de Início: 24/08/2024
-Última modificação: 02/09/2024
+Última modificação: 02/09/2024 
 */
 
 #include <stdio.h>
@@ -45,7 +45,6 @@ unsigned short delimitadorLexema(unsigned short Ccaracter){
         break;
     }
 
-    // Críar delimitador por tipo (cada tipo tem delimitador especificos)
 
 }
 
