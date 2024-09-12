@@ -12,6 +12,11 @@ Data de Início: 24/08/2024
 
 #define MAX_LINHA 500
 
+typedef struct Token {
+    char tValor[MAX_LINHA];
+    unsigned short tTipo;
+} token;
+
 FILE *arq;
 char buffers[MAX_LINHA];
 char lexema[MAX_LINHA];
@@ -19,6 +24,7 @@ unsigned short tipo = 0;
 int linhAtual=0,colunaAtual=0;
 int aux=0;
 unsigned short estado,fim=0;
+token teste;
 
 
 int abrirArquivo (char []);
