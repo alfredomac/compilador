@@ -9,11 +9,11 @@ Este documento espelha a documentação do compilador MACUTUNDA, um projeto da d
 O compilador será feita e traduzido para linguagem C.
 
 ## 2. Analisador Léxico
-### 3.1 RF
+### 2.1 RF
 1. Ler caracter a partir de um ficheiro de texto
 2. Transformar os lexemas em tokens.
 
-### 3.2 Expressões regulares
+### 2.2 Expressões regulares
 
 As expressões regulares foram usadas para expressar a regra de formação de caracteres.
 - Número inteiro: [0-9]+
@@ -25,5 +25,5 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 
 **OBS:** Delimitador de lexemas: espaço (32 na tabela) e nova linha (10)
 
-### 3.3 Autômato finito
+### 2.3 Autômato finito
 Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas. 
