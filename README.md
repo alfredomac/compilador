@@ -20,7 +20,7 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 - Número real: [0-9]+[.][0-9]+
 - Identificador: [a-z A-Z _] [a-z A-Z  0-9 _]*
 - Operadores Aritméticos: {“+”, “-”,”*”,”/”,”=”}
-- Operadores Comparação: {“==”,”!=”,">",">=","<","<=}
+- Operadores Comparação: {“==”,”!=”,">",">=","<","<="}
 - Operadores lógicos: {"nao","ou","e"}
 - Palavras chave: {“se”,“enquanto”,”inteiro”,”real”, “literal”, "logico","le", "para"}
 
