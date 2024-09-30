@@ -20,10 +20,12 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 - Número real: [0-9]+[.][0-9]+
 - Identificador: [a-z A-Z _] [a-z A-Z  0-9 _]*
 - Operadores Aritméticos: {“+”, “-”,”*”,”/”,”=”}
-- Operadores Comparação: {“==”,”!=”}
-- Palavras chave: {“se”, “enquanto”,”inteiro”,”real”, “caracter”}
+- Operadores Comparação: {“==”,”!=”,">",">=","<","<=}
+- Operadores lógicos: {"nao","ou","e"}
+- Palavras chave: {“se”,“enquanto”,”inteiro”,”real”, “literal”, "logico","le", "para"}
 
 **OBS:** Delimitador de gerado.tValors: espaço (32 na tabela) e nova linha (10)
 
-### 2.3 Autômato finito
-Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas. 
+### 2.3 Autômato determinístico finito
+Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas.
+
