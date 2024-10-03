@@ -2,7 +2,7 @@
 Programa: Compilador Macutunda
 Autor: Alfredo Macutunda
 Data de Início: 24/08/2024
-Última modificação: 12/09/2024 
+Última modificação: 03/10/2024 
 */
 
 #include <stdio.h>
@@ -21,8 +21,7 @@ token gerado;
 
 char buffers[MAX_LINHA];
 int linhAtual=0,colunaAtual=0;
-int aux=0;
-unsigned short estado=1,fim=0;
+unsigned short estado=1,fim=0,aux=0;
 
 
 int abrirArquivo (char []);
@@ -30,10 +29,37 @@ void lerLinha ();
 unsigned short delimitador(unsigned short);
 token lexico (unsigned short); 
 
-void limparString (char *cadeia){
-    for(unsigned short i=0;i<strlen(gerado.tValor);i++){
-        cadeia[i]=' ';
+void limparString (char* cadeia){
+    for(unsigned short i=0;i<strlen(cadeia);i++){
+        cadeia[i] =' ';
     }
+}
+
+void gerarIdentificador(){
+    estado = 67;
+    gerado.tTipo=25;
+    fim=1;
+}
+
+void alfaNumerico(unsigned short Ccaracter){
+    switch (Ccaracter){
+        case 48 ... 57: //   [0-9]
+        case 65 ... 90: //   [A-Z]
+        case 97 ... 104: //  [a-h]
+        case 106 ... 122: // [j-z]
+            gerarIdentificador();
+            break;
+        default:
+            estado=0;
+        break;
+    }
+}
+
+void transicao(unsigned short est, unsigned short ger, unsigned short f){
+    estado = est;
+    gerado.tTipo = ger;
+    fim = f;
+
 }
 
 unsigned short delimitador(unsigned short Ccaracter){
@@ -63,10 +89,12 @@ int abrirArquivo( char nomeArquivo[] ){
 }
 
 void lerLinha (){
-    linhAtual = 1;
     if (abrirArquivo ("programa.txt") !=-1 ){
         //while(fgets(buffers,MAX_LINHA,arq) != NULL){
-            fgets(buffers,MAX_LINHA,arq);            
+            fgets(buffers,MAX_LINHA,arq);   
+            aux = 0;
+            estado = 1; 
+            limparString(gerado.tValor);
             linhAtual++;
         //}        
     }
@@ -74,16 +102,38 @@ void lerLinha (){
 
 void lerCaracter(){
     token t;
-    unsigned short caracter;
+    unsigned short cCaracter;
+    unsigned short cAux=0; //Guarda posição do erro
+    char* cadVazio = "";
     colunaAtual=0;
     estado=1;
     lerLinha();
-    while(colunaAtual<=strlen(buffers) -1 ){
-        caracter= buffers[colunaAtual];
-        t = lexico(caracter);
-        printf("%s - %d ", t.tValor, t.tTipo);
+    while(colunaAtual<=strlen(buffers)-1 ){
+        cCaracter= buffers[colunaAtual];
+        t = lexico(cCaracter);
+        if(estado==0){
+            printf("<%s,%d> ", gerado.tValor, gerado.tTipo);
+            limparString(gerado.tValor);
+            //strcpy(gerado.tValor,cadVazio);
+            if(fim==1){
+                aux = 0;
+                estado = 1;
+                t = lexico(cCaracter);
+            } else{
+                estado==0; // Erro
+                colunaAtual = strlen(buffers); // Sair do Loop
+            }
+        }
+        cAux++;
         colunaAtual++;
     }
+    if(fim==1){
+    //if(estado!=0){
+        printf("<%s,%d> ", gerado.tValor, gerado.tTipo);
+    }else{
+        printf("Erro na Ln %d Col %d",linhAtual, cAux-1);
+    }
+    printf("\n");
 }
 
 
@@ -129,116 +179,94 @@ token lexico(unsigned short Ccaracter){
    30 - imprime
    31 - le
    32 - se
-   33 - enquanto
-   34 - para
+   33 - senao
+   34 - enquanto
+   35 - para
    */
     
     char caracter = Ccaracter;
-    
     switch (estado) {
         case 1:
             aux = 0;
+            fim = 1;
             /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 48 ... 57 : // [0-9]
-                estado = 2;
-                gerado.tTipo = 1;
+                transicao(2,1,fim);
                 break;
             case 34: // "
-                estado = 5;
-                gerado.tTipo = 3;
+                transicao(5,3,fim);
+                fim = 0;
                 break; 
             case 43: // +
-                estado = 8;
-                gerado.tTipo = 4;
+                transicao(8,4,fim);
                 break;
             case 45: // -
-                estado = 9;
-                gerado.tTipo = 5;
+                transicao(9,5,fim);
                 break;
             case 42: // *
-                estado = 10;
-                gerado.tTipo = 6;
+                transicao(10,6,fim);
                 break;
             case 47: // / 
-                estado = 11;
-                gerado.tTipo = 7;
+                transicao(11,7,fim);
                 break;
             case 61: // = 
-                estado = 12;
-                gerado.tTipo = 8;
+                transicao(12,8,fim);
                 break;
             case 33: // !
-                estado = 14;
-                gerado.tTipo = 10;
+                fim = 0;
+                transicao(2,1,fim);
                 break;
             case 62: // >
-                estado = 16;
-                gerado.tTipo = 11;
+                transicao(16,11,fim);
                 break;
             case 60: // <
-                estado = 18;
-                gerado.tTipo = 13;
+                transicao(18,13,fim);
                 break;
             case 40: // (
-                estado = 20;
-                gerado.tTipo = 15;
+                transicao(20,15,fim);
                 break;
             case 41: // )
-                estado = 21;
-                gerado.tTipo = 16;
+                transicao(20,16,fim);
                 break;
             case 123: // {
-                estado = 22;
-                gerado.tTipo = 17;
+                transicao(22,17,fim);
                 break;
             case 125: // }
-                estado = 23;
-                gerado.tTipo = 18;
+                transicao(23,18,fim);
                 break;
             case 32: // (Espaço em Branco)
-                estado = 24;
-                gerado.tTipo = 19;
+                transicao(24,19,fim);
                 break;
             case 9: // (Tabulação)
-                estado = 25;
-                gerado.tTipo = 20;
+                transicao(25,20,fim);
                 break;
             case 10: // (Nova Linha)
-                estado = 26;
-                gerado.tTipo = 21;
+                transicao(26,21,fim);
                 break;
             case 101: // e
-                estado = 68;
-                gerado.tTipo = 22;
+                transicao(68,22,fim);
                 break;
             case 111: // o
-                estado = 79;
-                gerado.tTipo = 23;
+                transicao(79,25,fim);
                 break;
             case 110: // n
-                estado = 76;
-                gerado.tTipo = 24;
+                transicao(76,25,fim);
                 break;
             case 105: // i
-                estado = 44;
-                gerado.tTipo = 26;
+                transicao(44,25,fim);
                 break;
             case 114: // r
-                estado = 57;
-                gerado.tTipo = 27;
+                transicao(57,25,fim);
                 break;
             case 108: // l
-                estado = 32;
-                gerado.tTipo = 28;
+                transicao(32,25,fim);
                 break;
             case 115: // s
-                estado = 44;
-                gerado.tTipo = 32;
+                transicao(27,25,fim);
                 break;
             case 112: // p
-                estado = 61;
-                gerado.tTipo = 34;
+                transicao(61,25,fim);
                 break;
 
             //Demais Caracteres e undercore (_)
@@ -250,8 +278,7 @@ token lexico(unsigned short Ccaracter){
             case 109: // m
             case 113: // q
             case 116 ... 122: // t-z
-                estado = 66;
-                gerado.tTipo = 25;
+                transicao(66,25,fim);
                 break;
             default:
                 estado = 0;
@@ -266,12 +293,10 @@ token lexico(unsigned short Ccaracter){
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 48 ... 57 : // [0-9]
-                estado = 2;
-                gerado.tTipo = 1;
+                transicao(2,1,1);
                 break;
             case 46: // .
-                estado = 3;
-                gerado.tTipo = 3;
+                transicao(3,2,0);
                 break;
             default:
                 estado=0;
@@ -280,12 +305,1089 @@ token lexico(unsigned short Ccaracter){
         break;
         /* ---------------- Caracteres do Estado -------------------*/
 
-         case 3:
+        case 3:
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 48 ... 57 : // [0-9]
-                estado = 2;
-                gerado.tTipo = 3;
+                transicao(4,2,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 4:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57 : // [0-9]
+                transicao(4,2,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 5:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 32 ... 33: 
+            case 35 ... 126: // Todos caracteres excepto os de controle
+                transicao(6,3,0);
+                break;
+            case 34: // "
+                transicao(7,3,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 6:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 32 ... 33: 
+            case 35 ... 126: // Todos caracteres excepto os de controle
+                transicao(6,3,0);
+                break;
+            case 34: // "
+                transicao(7,3,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 12:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 61 : // =
+                transicao(13,9,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 14:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 61 : // =
+                transicao(15,10,1);
+                fim=1;
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 16:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 61 : // =
+                transicao(17,12,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 18:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 61 : // =
+                transicao(19,14,1);
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 27:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101 : // e
+                transicao(28,32,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 122: // [f-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 28:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 110 : // n
+                transicao(29,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 109: //  [a-m]
+            case 111 ... 122: // [o-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 29:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(30,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 122: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 30:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 111 : // o
+                transicao(31,33,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 110: //  [a-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 31:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 32:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101: // e
+                transicao(65,31,1);
+                break;
+            case 105: // i
+                transicao(38,25,1);
+                break;
+            case 111 : // o
+                transicao(33,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 104: // [f-h]
+            case 106 ... 110: // [j-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 33:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 103 : // g
+                transicao(34,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 102: //  [a-f]
+            case 104 ... 122: // [h-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 34:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 105 : // i
+                transicao(35,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 104: //  [a-h]
+            case 106 ... 122: // [j-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 35:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 99 : // c
+                transicao(36,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 98: //   [a-b]
+            case 100 ... 122: // [d-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 36:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 111 : // o
+                transicao(37,29,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 110: //  [a-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 37:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 38:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 116 : // t
+                transicao(39,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 115: //  [a-s]
+            case 117 ... 122: // [u-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 39:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101 : // e
+                transicao(40,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 122: // [f-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 40:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 114 : // r
+                transicao(30,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 113: //  [a-q]
+            case 115 ... 122: // [s-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 41:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(42,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 122: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 42:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 108 : // l
+                transicao(43,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 107: //  [a-k]
+            case 109 ... 122: // [m-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 43:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 44:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 109 : // m
+                transicao(45,25,1);
+                break;
+            case 110: // n
+                transicao(51,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 108: //  [a-l]
+            case 111 ... 122: // [o-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 45:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 112 : // p
+                transicao(46,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 111: //  [a-o]
+            case 113 ... 122: // [q-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 46:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 114 : // r
+                transicao(47,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 113: //  [a-q]
+            case 115 ... 122: // [s-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 47:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 105 : // i
+                transicao(48,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 104: //  [a-h]
+            case 106 ... 122: // [j-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 48:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 109 : // m
+                transicao(49,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 108: //  [a-l]
+            case 110 ... 122: // [n-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 49:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101 : // e
+                transicao(50,30,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 122: // [f-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+        
+        case 50:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 51:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 116 : // t
+                transicao(52,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 115: //  [a-s]
+            case 117 ... 122: // [u-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 52:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101 : // e
+                transicao(53,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 122: // [f-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 53:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 105 : // i
+                transicao(54,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 104: //  [a-h]
+            case 106 ... 122: // [j-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 54:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 114 : // r
+                transicao(55,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 113: //  [a-q]
+            case 115 ... 122: // [s-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 55:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 111 : // o
+                transicao(56,26,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 110: //  [a-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 56:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 57:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 101 : // e
+                transicao(58,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 100: //  [a-d]
+            case 102 ... 122: // [f-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 58:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(59,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 122: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 59:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 108 : // l
+                transicao(56,27,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 107: //  [a-k]
+            case 109 ... 122: // [m-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 60:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-q]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 61:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(62,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 113: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 62:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 114 : // r
+                transicao(63,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 113: //  [a-q]
+            case 115 ... 122: // [s-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 63:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(62,35,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 113: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 64:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 65:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 66:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-q]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 67:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 68:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 110 : // n
+                transicao(62,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 109: //  [a-m]
+            case 111 ... 122: // [o-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+         case 69:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 113 : // q
+                transicao(70,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 112: //  [a-p]
+            case 114 ... 122: // [r-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+         case 70:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 117 : // u
+                transicao(71,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 116: //  [a-t]
+            case 118 ... 122: // [v-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 71:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(72,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 122: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 72:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 110 : // n
+                transicao(73,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 109: //  [a-m]
+            case 111 ... 122: // [o-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 73:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 116 : // t
+                transicao(74,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 115: //  [a-s]
+            case 117 ... 122: // [u-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 74:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 111 : // o
+                transicao(75,34,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 110: //  [a-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 75:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 76:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 97 : // a
+                transicao(77,25,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 98 ... 122: //  [b-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 77:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 111 : // o
+                transicao(78,24,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 110: //  [a-n]
+            case 112 ... 122: // [p-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 78:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 79:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 117 : // u
+                transicao(80,23,1);
+                break;
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 116: //  [a-t]
+            case 118 ... 122: // [v-z]
+                gerarIdentificador();
+                break;
+            default:
+                estado=0;
+                break;
+            }
+        break;
+        /* ---------------- Caracteres do Estado -------------------*/
+
+        case 80:
+        /* ---------------- Caracteres do Estado -------------------*/
+            switch (Ccaracter){
+            case 48 ... 57: //   [0-9]
+            case 65 ... 90: //   [A-Z]
+            case 97 ... 122: //  [a-z]
+                gerarIdentificador();
                 break;
             default:
                 estado=0;
@@ -298,11 +1400,13 @@ token lexico(unsigned short Ccaracter){
 
     
     default:
+        estado = 0;
         break;
     }
 
-    if(gerado.tTipo!=0){
+    if(estado!=0){
         gerado.tValor[aux] = caracter; 
+        aux++;
     }
 
     return gerado;
