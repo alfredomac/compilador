@@ -61,24 +61,6 @@ void transicao(unsigned short est, unsigned short ger, unsigned short f){
 
 }
 
-unsigned short delimitador(unsigned short Ccaracter){
-    // Os delimitadores são: espaço (32), nova linha, ponto e virgula
-    switch (Ccaracter){
-    case 0:
-    case 13: 
-    case 10 : // Nova linha
-    case 32 : // Espaço
-    case 61 : // Igual
-
-        return 1;
-        break;
-    default:
-        break;
-    }
-
-
-}
-
 int abrirArquivo( char nomeArquivo[] ){
     arq = fopen(nomeArquivo,"r");
     if(arq == NULL){
@@ -127,7 +109,6 @@ void lerCaracter(){
         colunaAtual++;
     }
     if(fim==1){
-    //if(estado!=0){
         printf("<%s,%d> ", gerado.tValor, gerado.tTipo);
     }else{
         printf("Erro na Ln %d Col %d",linhAtual, cAux-1);
@@ -139,11 +120,7 @@ void lerCaracter(){
 
 token lexico(unsigned short Ccaracter){
     
-    /* Essa função tem os seguintes retornos:
-        1 - Continua  
-        2 - Fim
-        0 - Não reconheceu a palavra 
-    */
+  
    /*
    Tipos: 
    01 - Inteiro
