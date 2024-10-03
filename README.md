@@ -11,7 +11,7 @@ O compilador será feita e traduzido para linguagem C.
 ## 2. Analisador Léxico
 ### 2.1 RF
 1. Ler caracter a partir de um ficheiro de texto
-2. Transformar os gerado.tValors em tokens.
+2. Transformar os lexemas em tokens.
 
 ### 2.2 Expressões regulares
 
@@ -23,8 +23,6 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 - Operadores Comparação: {“==”,”!=”,">",">=","<","<="}
 - Operadores lógicos: {"nao","ou","e"}
 - Palavras chave: {“se”,“enquanto”,”inteiro”,”real”, “literal”, "logico","le", "para"}
-
-**OBS:** Delimitador de gerado.tValors: espaço (32 na tabela) e nova linha (10)
 
 ### 2.3 Autômato determinístico finito
 Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas.
