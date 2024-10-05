@@ -18,7 +18,6 @@ typedef struct Token {
 
 FILE *arq;
 token gerado;
-
 char buffers[MAX_LINHA];
 int linhAtual=0,colunaAtual=0;
 unsigned short estado=1,fim=0,aux=0;
@@ -26,8 +25,9 @@ unsigned short estado=1,fim=0,aux=0;
 
 int abrirArquivo (char []);
 void lerLinha ();
-unsigned short delimitador(unsigned short);
-token lexico (unsigned short); 
+void explorarLinha();
+token automato (unsigned short); 
+
 
 void limparString (char* cadeia){
     for(unsigned short i=0;i<strlen(cadeia);i++){
@@ -70,36 +70,35 @@ int abrirArquivo( char nomeArquivo[] ){
 }
 
 void lerLinha (){
-    if (abrirArquivo ("programa.txt") !=-1 ){
-        //while(fgets(buffers,MAX_LINHA,arq) != NULL){
-            fgets(buffers,MAX_LINHA,arq);   
-            aux = 0;
-            estado = 1; 
-            limparString(gerado.tValor);
+    
+    if(abrirArquivo ("programa.txt") !=-1 ){
+        while(fgets(buffers,MAX_LINHA,arq) != NULL){
+            explorarLinha();
             linhAtual++;
-        //}        
+        }        
     }
+    fclose(arq);
 }
 
-void lerCaracter(){
-    token t;
+
+void explorarLinha(){
+    token t; 
     unsigned short cCaracter;
     unsigned short cAux=0; //Guarda posição do erro
     char* cadVazio = "";
     colunaAtual=0;
     estado=1;
-    lerLinha();
+    aux = 0;
     while(colunaAtual<=strlen(buffers)-1 ){
         cCaracter= buffers[colunaAtual];
-        t = lexico(cCaracter);
+        t = automato(cCaracter);
         if(estado==0){
-            printf("<%s,%d> ", gerado.tValor, gerado.tTipo);
+            printf("<%s,%d>", gerado.tValor , gerado.tTipo);
             limparString(gerado.tValor);
-            //strcpy(gerado.tValor,cadVazio);
             if(fim==1){
                 aux = 0;
                 estado = 1;
-                t = lexico(cCaracter);
+                t = automato(cCaracter);
             } else{
                 estado==0; // Erro
                 colunaAtual = strlen(buffers); // Sair do Loop
@@ -109,16 +108,18 @@ void lerCaracter(){
         colunaAtual++;
     }
     if(fim==1){
-        printf("<%s,%d> ", gerado.tValor, gerado.tTipo);
+        if(cCaracter!=10){
+            printf("<%s,%d>", gerado.tValor, gerado.tTipo);
+        }
     }else{
-        printf("Erro na Ln %d Col %d",linhAtual, cAux-1);
+        printf("Erro na Ln %d Col %d\n",linhAtual, cAux-1);
     }
     printf("\n");
 }
 
 
 
-token lexico(unsigned short Ccaracter){
+token automato(unsigned short Ccaracter){
     
   
    /*
@@ -143,7 +144,7 @@ token lexico(unsigned short Ccaracter){
    18 - }
    19 - Espaço em branco
    20 - Tabulação
-   21 - Nova Linha
+   21 - , (Vírgula)
    22 - Op. Log e
    23 - Op. Log ou
    24 - Op. Log nao
@@ -158,6 +159,7 @@ token lexico(unsigned short Ccaracter){
    33 - senao
    34 - enquanto
    35 - para
+   36 - Nova Linha
    */
     
     char caracter = Ccaracter;
@@ -217,7 +219,7 @@ token lexico(unsigned short Ccaracter){
             case 9: // (Tabulação)
                 transicao(25,20,fim);
                 break;
-            case 10: // (Nova Linha)
+            case 44: // , (Vírgula)
                 transicao(26,21,fim);
                 break;
             case 101: // e
@@ -243,6 +245,9 @@ token lexico(unsigned short Ccaracter){
                 break;
             case 112: // p
                 transicao(61,25,fim);
+                break;
+            case 10: //(Nova Linha)
+                transicao(81,25,fim);
                 break;
 
             //Demais Caracteres e undercore (_)
@@ -1017,6 +1022,8 @@ token lexico(unsigned short Ccaracter){
 
 
 
+
+
     
     default:
         estado = 0;
@@ -1037,7 +1044,8 @@ token lexico(unsigned short Ccaracter){
 
 
 int main(){
-   lerCaracter();
+    lerLinha();
+   //lerCaracter();
 
 }
 
