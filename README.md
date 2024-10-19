@@ -11,7 +11,7 @@ O compilador será feita e traduzido para linguagem C.
 ## 2. Analisador Léxico
 ### 2.1 RF
 1. Ler caracter a partir de um ficheiro de texto
-2. Transformar os lexemas em tokens.
+2. Transformar os gerado.tValors em tokens.
 
 ### 2.2 Expressões regulares
 
