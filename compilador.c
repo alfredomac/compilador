@@ -2,7 +2,7 @@
 Programa: Compilador Macutunda
 Autor: Alfredo Macutunda
 Data de Início: 24/08/2024
-Última modificação: 03/10/2024 
+Última modificação: 24/10/2024 
 */
 
 #include <stdio.h>
@@ -18,22 +18,475 @@ typedef struct Token {
 
 FILE *arq;
 token gerado;
+token t; // Token a ser consumido
+
 char buffers[MAX_LINHA];
 int linhAtual=0,colunaAtual=0;
 unsigned short estado=1,fim=0,aux=0;
 
 
 int abrirArquivo (char []);
+
+
+// Analisador Léxico
+
 void lerLinha ();
 void explorarLinha();
-token automato (unsigned short); 
+void transicao(unsigned short , unsigned short, unsigned short);
+void erroTransicao();
+void alfaNumerico(unsigned short);
+token automato (unsigned short);
+token consumir (); 
+token proximoToken(); 
 
+
+// Analisador Sintático
+unsigned short int cmds();
+unsigned short int cmd();
+unsigned short int atribuicao();
+unsigned short int declaracao();
+unsigned short int le();
+unsigned short int imprime();
+unsigned short int se();
+unsigned short int enquanto();
+unsigned short int para();
+unsigned short int expressao();
+unsigned short int expressaoCondicional();
+unsigned short int condicao();
+unsigned short int termo();
+unsigned short int fator();
+
+void mensagemErro();
+
+/* --------------------------------------------- USO GERAL -----------------------------------------*/
+
+int abrirArquivo( char nomeArquivo[] ){
+    arq = fopen(nomeArquivo,"r");
+    if(arq == NULL){
+        fclose(arq);
+        return -1; // Erro na abertura do ficheiro
+    }
+}
 
 void limparString (char* cadeia){
     for(unsigned short i=0;i<strlen(cadeia);i++){
         cadeia[i] =' ';
     }
 }
+
+/* --------------------------------------------- USO GERAL -----------------------------------------*/
+
+
+/* --------------------------------------------- ANALISADOR SINTÁTICO -----------------------------------------*/
+
+void mensagemErro(){
+    printf("Erro (sintático) na Ln %d Col %d", linhAtual+1, colunaAtual-1);
+}
+
+unsigned short int cmds(){
+    if(abrirArquivo ("programa.txt") !=-1 ){
+        while(fgets(buffers,MAX_LINHA,arq) != NULL){  
+            printf("CMDS - ");
+            colunaAtual = 0;  
+            t = proximoToken();
+            if (cmd()==1){
+                printf("Boas");
+            }
+            printf("\n");
+            linhAtual++;
+        }        
+    }
+    fclose(arq);
+}
+
+unsigned short int cmd(){
+    unsigned short int e=0;
+    printf("CMD - ");
+    switch (t.tTipo){
+    case 25:
+        e = atribuicao();
+        break;
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+        e = declaracao();
+        break;
+    case 30: 
+        e = imprime();
+        break;
+    case 31:
+        e = le();
+        break;
+    case 32:
+        e = se();
+        break;
+    case 34:
+        e = enquanto();
+        break;
+    case 35:
+        e = para();
+        break;
+    case  36: // \n
+        e = 1;
+        break;
+    default:
+        mensagemErro();
+        break;
+    }
+    
+    return e;
+}
+
+unsigned short int atribuicao(){
+    unsigned short int certo = 0 ; //certo?
+    printf("Atribuição - ");
+    t = proximoToken();
+    if (t.tTipo == 8){
+        t = proximoToken();
+        if(expressao()==1){
+            certo = 1;
+        }
+    }
+
+    if(certo == 0){
+        mensagemErro();
+    }
+    return certo;
+}
+
+unsigned short int declaracao(){
+    unsigned short int certo = 0 ; //certo?
+    printf("Declaração - ");
+    t = proximoToken();
+    if( t.tTipo == 25 ){
+        certo = 1;
+        t = proximoToken();
+        while ( (t.tTipo == 21) && ( certo==1)  ){
+            t = proximoToken();
+            if(t.tTipo == 25){
+                certo = 1;
+            } else {
+                certo = 0;
+            }
+
+            if(certo==1){
+                t = proximoToken();    
+            }
+        }
+    }
+
+    if(certo==0){
+        mensagemErro();
+    }
+    return certo;
+}
+
+unsigned short int imprime(){
+    unsigned short int certo = 0 ; 
+    printf("Imprime - ");
+    t = proximoToken();
+    if(t.tTipo = 15){ // (
+        t = proximoToken();
+        if( expressao() == 1){
+            certo = 1;
+            while ( (t.tTipo == 21) && (certo==1)  ){
+                certo = 0;
+                t = proximoToken();
+                if(expressao() == 1){
+                    certo = 1;
+                } 
+            }
+            if(certo == 1){
+                certo = 0;
+                if(t.tTipo==16){ // )
+                    certo = 1;
+                }
+            }
+        }
+    }
+
+    if(certo==0){
+        mensagemErro();
+    }
+    return certo;
+}
+
+unsigned short int le(){
+    unsigned short int certo = 0 ; //certo?
+    printf("Le - ");
+    t = proximoToken();
+    if(t.tTipo = 15){
+        t = proximoToken();
+        if( t.tTipo == 25 ){
+            certo = 1;
+            t = proximoToken();
+            while ( (t.tTipo == 21) && ( certo==1)  ){
+                t = proximoToken();
+                if(t.tTipo == 25){
+                    certo = 1;
+                } else {
+                    certo = 0;
+                }
+
+                if(certo==1){
+                    t = proximoToken();    
+                }
+            }
+            if(certo == 1){
+                certo = 0;
+                t = proximoToken();
+                if(t.tTipo==16){
+                    certo = 1;
+                }
+            }
+        }
+    }
+
+    if(certo==0){
+        mensagemErro();
+    }
+    return certo;
+}
+
+unsigned short int para(){
+    unsigned short int certo = 0;
+    printf("Para - ");
+    t =  proximoToken();
+    if(t.tTipo == 15){ // (
+        t = proximoToken();
+        if(t.tTipo == 25){ // Pegar variável de atribuição
+            if(atribuicao()==1){ // Atribuição
+                if(t.tTipo == 21){ //,
+                    if(condicao() == 1){ // condição
+                        if(t.tTipo == 21){ //,
+                            if(t.tTipo){ // Atribuição Incremental [Ainda não terminei]
+                                if(t.tTipo==16){ // )
+                                    t = proximoToken();
+                                    if(t.tTipo == 17){
+                                        //if(cmds()==1){
+                                            t = proximoToken();
+                                            if(t.tTipo == 18){
+                                                certo = 1;
+                                            }
+
+                                        //}
+                                    }   
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if(certo == 0){
+        mensagemErro();
+    }
+}
+
+
+unsigned short int enquanto(){
+    unsigned short int certo = 0;
+    printf("Enquanto - ");
+    t =  proximoToken();
+    if(t.tTipo == 15){ // (
+        if(condicao()==1){ // condição
+            if(t.tTipo==16){ // )
+                t = proximoToken();
+                if(t.tTipo == 17){
+                    //if(cmds()==1){
+                        
+                        t = proximoToken();
+                        if(t.tTipo == 18){
+                            certo = 1;
+                        }
+
+                    //}
+                }
+            }
+        }
+    }
+
+    if(certo == 0){
+        mensagemErro();
+    }
+
+}
+
+
+
+unsigned short int se(){
+    unsigned short int certo = 0;
+
+    printf("Se - ");
+    t = proximoToken();
+    if(t.tTipo == 15){ // (
+        if(condicao()==1){ // Condição
+            if(t.tTipo == 16){ // )
+                t = proximoToken();
+                if(t.tTipo == 17){ // {
+                    //if(cmds()==1){ // Comandos           
+                        t = proximoToken();
+                        if( t.tTipo == 18 ){ // }
+                            certo = 1;
+                        }
+
+                        t = proximoToken();
+                        if(t.tTipo == 33){ // Senão
+                            certo = 0;
+                            t = proximoToken();
+                            if (t.tTipo == 17){ // {
+                                if(cmds()==1){
+                                    t = proximoToken();
+                                    if(t.tTipo == 18){
+                                        certo = 1;
+                                    }
+                                }
+                            }
+                            
+
+                        }
+                    //}
+                }
+            }
+            
+        }
+    }
+
+    if(certo==0){
+        mensagemErro();
+    }
+
+}
+
+unsigned short int condicao(){
+    unsigned short int certo = 0;
+    printf("Condição - ");
+    if(t.tTipo==24){
+        t = proximoToken();
+    }
+    if(expressaoCondicional()==1){
+        certo = 1;
+        /*
+        while (((t.tTipo==22) || (t.tTipo==23) ) && (certo == 1) ) {
+            certo = 0;
+            if(expressaoCondicional()==1){
+                certo = 1;
+            }
+        }
+        */
+    }
+
+    return certo;
+}
+
+unsigned short int expressaoCondicional(){
+    unsigned short int certo = 0;
+    printf("Expressão Condicional - ");
+    t = proximoToken();
+    if(expressao()==1){
+        switch (t.tTipo){
+        case 9 ... 14: // Operador relacional
+            printf("Operador Relacional %d ", t.tTipo );
+            t = proximoToken();
+            if(expressao()==1){
+                certo = 1;
+            }
+            
+            break;
+        default:
+            break;
+        }
+    }
+
+    return certo;
+
+}
+
+unsigned short expressao(){
+    printf("Expressão - ");
+    unsigned short int certo = 0;
+    if(t.tTipo==3){
+        printf("String - ");
+        certo = 1;
+        t = proximoToken();
+    }else{
+        if(termo() == 1){
+            certo = 1;
+            while(((t.tTipo==4) || (t.tTipo==5) ) && (certo==1) ){
+                printf("Adição - ");
+                certo = 0;
+                if(termo()==1){
+                    certo = 1;
+                    t = proximoToken();
+                }
+            }
+        }
+    }
+    
+    return certo;
+}
+
+unsigned short int termo(){
+    printf("Termo - ");
+    unsigned short int certo = 0;
+    if(fator()==1){
+        certo = 1;
+        while( ((t.tTipo==6) || (t.tTipo==7) ) && (certo==1) ){
+            printf("Multiplicação - ");
+            certo = 0;
+            if(fator()==1){
+                certo = 1;
+                t = proximoToken();
+            }
+        }
+    }
+    return certo;
+}
+
+unsigned short int fator(){
+    printf("Fator - ");
+    unsigned short int certo=0;
+    switch (t.tTipo){
+    case 1:
+    case 2: 
+        printf("Número - ");
+        certo = 1;
+        break;
+    case 25:
+        printf("Id - ");
+        certo = 1;
+        break;
+    case 15:
+        printf("Parenteses - ");
+        printf("Entrando - ");
+        //t = proximoToken();
+        if(expressao() == 1){
+            t = proximoToken();
+            printf("Saindo - ");           
+            //printf("Olha %d ", t.tTipo);
+            if((t.tTipo == 16) ){
+                printf("Saindo - "); 
+                certo=1;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    t = proximoToken();
+
+    return certo;
+}
+
+/* --------------------------------------------- ANALISADOR SINTÁTICO -----------------------------------------*/
+
+
+
+/* --------------------------------------------- ANALISADOR LÉXICO -----------------------------------------*/
 
 void gerarIdentificador(){
     estado = 67;
@@ -49,31 +502,42 @@ void alfaNumerico(unsigned short Ccaracter){
             gerarIdentificador();
             break;
         default:
-            estado=0;
-        break;
+            erroTransicao();
+            break;
     }
+}
+
+void erroTransicao(){
+    estado = 0;
 }
 
 void transicao(unsigned short est, unsigned short ger, unsigned short f){
     estado = est;
     gerado.tTipo = ger;
     fim = f;
-
 }
 
-int abrirArquivo( char nomeArquivo[] ){
-    arq = fopen(nomeArquivo,"r");
-    if(arq == NULL){
-        fclose(arq);
-        return -1; // Erro na abertura do ficheiro
-    }
-}
+
 
 void lerLinha (){
-    
+    token p;
     if(abrirArquivo ("programa.txt") !=-1 ){
-        while(fgets(buffers,MAX_LINHA,arq) != NULL){
+        while(fgets(buffers,MAX_LINHA,arq) != NULL){     
+            /*
+            if (cmds()==1){
+                printf("Boas\n");
+            }
+    
+            */
             explorarLinha();
+            
+            /*
+            if(colunaAtual<=strlen(buffers)-1){
+                p = consumir();
+                printf("Aqui: <%s,%d>", p.tValor , p.tTipo);
+            }
+            */
+
             linhAtual++;
         }        
     }
@@ -94,6 +558,8 @@ void explorarLinha(){
         t = automato(cCaracter);
         if(estado==0){
             printf("<%s,%d>", gerado.tValor , gerado.tTipo);
+            t.tTipo = gerado.tTipo;
+            strcpy(t.tValor,gerado.tValor);
             limparString(gerado.tValor);
             if(fim==1){
                 aux = 0;
@@ -118,9 +584,56 @@ void explorarLinha(){
 }
 
 
+token consumir(){
+    token t; 
+    unsigned short cCaracter;
+    unsigned short cAux=colunaAtual; //Guarda posição do erro
+    estado = 1;
+    aux = 0;
+    while(colunaAtual<=strlen(buffers)-1){
+        cCaracter= buffers[colunaAtual];
+        t = automato(cCaracter);
+        if(estado==0){
+            t.tTipo = gerado.tTipo;
+            strcpy(t.tValor,gerado.tValor);
+            limparString(gerado.tValor);
+            if(fim==1){
+                estado = 1;
+                return t; 
+            } else{
+                printf("Erro (Léxico) na Ln %d Col %d - ",linhAtual+1, cAux);
+                t.tTipo = 0;
+                return t;
+            }
+        }
+        cAux++;
+        colunaAtual++;
+    }
+    if(fim==1){
+        if(cCaracter!=10){
+            return gerado;
+        }
+    }else{
+        gerado.tTipo = 0;
+        printf("Aqui Erro (Léxico) na Ln %d Col %d\n",linhAtual+1, cAux);
+        return gerado;
+    }
+}
+
+token proximoToken(){
+    // Consome espaços em brancos: (Espaço) e Tab (Tabulação)
+    
+    t = consumir();
+    while ( ( (t.tTipo==19) || (t.tTipo==20) )){
+        t = consumir();
+    }
+    return t;
+}
+    
+
+
 
 token automato(unsigned short Ccaracter){
-    
   
    /*
    Tipos: 
@@ -262,7 +775,7 @@ token automato(unsigned short Ccaracter){
                 transicao(66,25,fim);
                 break;
             default:
-                estado = 0;
+                erroTransicao();
                 break;
             }
             
@@ -280,7 +793,7 @@ token automato(unsigned short Ccaracter){
                 transicao(3,2,0);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -293,7 +806,7 @@ token automato(unsigned short Ccaracter){
                 transicao(4,2,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -306,7 +819,7 @@ token automato(unsigned short Ccaracter){
                 transicao(4,2,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -323,7 +836,7 @@ token automato(unsigned short Ccaracter){
                 transicao(7,3,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -340,7 +853,7 @@ token automato(unsigned short Ccaracter){
                 transicao(7,3,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -353,7 +866,7 @@ token automato(unsigned short Ccaracter){
                 transicao(13,9,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -367,7 +880,7 @@ token automato(unsigned short Ccaracter){
                 fim=1;
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -380,7 +893,7 @@ token automato(unsigned short Ccaracter){
                 transicao(17,12,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -393,7 +906,7 @@ token automato(unsigned short Ccaracter){
                 transicao(19,14,1);
                 break;
             default:
-                estado=0;
+                erroTransicao();
                 break;
             }
         break;
@@ -420,7 +933,6 @@ token automato(unsigned short Ccaracter){
                 break;
             default:
                 alfaNumerico(Ccaracter);
-                estado=0;
                 break;
             }
         break;
@@ -1019,11 +1531,6 @@ token automato(unsigned short Ccaracter){
             alfaNumerico(Ccaracter);
         break;
         /* ---------------- Caracteres do Estado -------------------*/
-
-
-
-
-
     
     default:
         estado = 0;
@@ -1039,13 +1546,18 @@ token automato(unsigned short Ccaracter){
 
 }
 
+/* --------------------------------------------- ANALISADOR LÉXICO -----------------------------------------*/
 
 
 
 
 int main(){
-    lerLinha();
-   //lerCaracter();
+    //lerLinha();
+    
+    if(cmds()==1){
+        printf("Boas");
+    }
+   
 
 }
 
