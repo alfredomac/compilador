@@ -2,7 +2,7 @@
 Programa: Compilador Macutunda
 Autor: Alfredo Macutunda
 Data de Início: 24/08/2024
-Última modificação: 24/10/2024 
+Última modificação: 05/11/2024 
 */
 
 #include <stdio.h>
@@ -21,12 +21,15 @@ token gerado;
 token t; // Token a ser consumido
 
 char buffers[MAX_LINHA];
-int linhAtual=0,colunaAtual=0;
-unsigned short estado=1,fim=0,aux=0;
+int linhAtual = 0,colunaAtual = 0;
+unsigned short estado = 1,fim = 0,aux = 0;
+unsigned short aberto = 0; // Modifica se o arquivo está aberto
+unsigned short cSe = 0;
 
 
-int abrirArquivo (char []);
-
+// Geral
+void abrirArquivo ();
+void fecharArquivo ();
 
 // Analisador Léxico
 
@@ -44,10 +47,12 @@ token proximoToken();
 unsigned short int cmds();
 unsigned short int cmd();
 unsigned short int atribuicao();
+unsigned short int atribuicaoIncremental();
 unsigned short int declaracao();
 unsigned short int le();
 unsigned short int imprime();
 unsigned short int se();
+unsigned short int senao();
 unsigned short int enquanto();
 unsigned short int para();
 unsigned short int expressao();
@@ -55,16 +60,24 @@ unsigned short int expressaoCondicional();
 unsigned short int condicao();
 unsigned short int termo();
 unsigned short int fator();
-
-void mensagemErro();
+void erroSintatico();
 
 /* --------------------------------------------- USO GERAL -----------------------------------------*/
 
-int abrirArquivo( char nomeArquivo[] ){
+void fecharArquivo( ){
+    if(aberto == 1){
+        aberto = 0;
+        fclose(arq);
+    }
+}
+
+void abrirArquivo( ){
+    char nomeArquivo[] = "programa.txt";
     arq = fopen(nomeArquivo,"r");
     if(arq == NULL){
         fclose(arq);
-        return -1; // Erro na abertura do ficheiro
+    }else{
+        aberto = 1;
     }
 }
 
@@ -79,29 +92,69 @@ void limparString (char* cadeia){
 
 /* --------------------------------------------- ANALISADOR SINTÁTICO -----------------------------------------*/
 
-void mensagemErro(){
+void erroSintatico(){
     printf("Erro (sintático) na Ln %d Col %d", linhAtual+1, colunaAtual-1);
 }
 
+
+
+
 unsigned short int cmds(){
-    if(abrirArquivo ("programa.txt") !=-1 ){
-        while(fgets(buffers,MAX_LINHA,arq) != NULL){  
-            printf("CMDS - ");
-            colunaAtual = 0;  
-            t = proximoToken();
-            if (cmd()==1){
-                printf("Boas");
+    unsigned short int certo = 0;
+    printf("CMDS\n");
+    if(aberto == 1 ){
+
+        if(fgets(buffers,MAX_LINHA,arq) != NULL){
+            certo = cmd();  
+            // Enquanto for atribuição ou nova linha
+            while ( ((certo==9) || (certo==3)) && (certo!=10) && (certo!=0)){
+                if(fgets(buffers,MAX_LINHA,arq) != NULL ){
+                    certo = cmd();
+                } else {
+                    certo = 0;
+                }
             }
-            printf("\n");
-            linhAtual++;
-        }        
+        }
+
+        if(certo == 10){
+            
+            //while(fgets(buffers,MAX_LINHA,arq) != NULL){  
+            while ( (certo!=11) && (certo!=0)){
+                if(fgets(buffers,MAX_LINHA,arq) != NULL ){
+                    certo = cmd();
+                    //if (cmd()!=0){
+                }else{
+                    certo = 0;
+                }
+            }    
+        }
     }
-    fclose(arq);
+    printf("CMDS\n");
+    return certo;
+    
 }
 
 unsigned short int cmd(){
     unsigned short int e=0;
+    /*
+    Tipos: 
+    02 - Atribuição
+    03 - Declaração
+    04 - Imprime 
+    05 - Le
+    06 - Para
+    07 - Enquanto      
+    08 - Se
+    09 - Nova Linha
+    10 - Abrir Bloco
+    11 - Fechar Bloco
+    12 - Senao
+    */
+
+    colunaAtual = 0;
     printf("CMD - ");
+    t = proximoToken();
+    printf("Olha %d ", t.tTipo);
     switch (t.tTipo){
     case 25:
         e = atribuicao();
@@ -121,6 +174,9 @@ unsigned short int cmd(){
     case 32:
         e = se();
         break;
+    case 33:
+        e = senao();
+        break;
     case 34:
         e = enquanto();
         break;
@@ -128,29 +184,92 @@ unsigned short int cmd(){
         e = para();
         break;
     case  36: // \n
-        e = 1;
+        printf("Nova Linha - ");
+        e = 9;
+        break;
+    case 17: // {
+        printf("Abrir Bloco - ");
+        e = 10;
+        break;      
+    case 18: // }
+        printf("Fechar Bloco - ");
+        e = 11;
         break;
     default:
-        mensagemErro();
+        erroSintatico();
         break;
     }
-    
+    if(e!=0){
+        printf("Boas");
+    }
+    printf("\n");
+    linhAtual++;
     return e;
+    
 }
 
 unsigned short int atribuicao(){
-    unsigned short int certo = 0 ; //certo?
+    unsigned short int tAnterior, certo = 0 ; //certo
     printf("Atribuição - ");
     t = proximoToken();
-    if (t.tTipo == 8){
+    switch (t.tTipo){
+    case 8: // =
         t = proximoToken();
         if(expressao()==1){
-            certo = 1;
+            certo = 2;
+        }
+        break;
+    case 4: // + 
+    case 5: // -
+        tAnterior = t.tTipo; // Pegar o sinal anterior
+        t = proximoToken();
+        if(t.tTipo == tAnterior){ //Se for o mesmo sinal do anterior
+            certo = 2;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if(certo == 0){
+        erroSintatico();
+    }
+    return certo;
+}
+
+unsigned short int atribuicaoIncremental(){
+    unsigned short int tAnterior, certo = 0 ; 
+    printf("Atribuição Incremental - ");
+    if (t.tTipo == 25){ // id
+        t = proximoToken();
+        switch (t.tTipo){
+        case 8: // =
+            t = proximoToken();
+            if(t.tTipo == 25){ //Id
+                t = proximoToken();
+                if((t.tTipo == 4) || (t.tTipo ==5)){ // + ou -
+                    t = proximoToken();
+                    if( (t.tTipo == 25) || (t.tTipo==1) ){ // id ou inteiro
+                        certo = 1;
+                    }
+                }
+            }
+            break;
+        case 4: // + 
+        case 5: // -
+            tAnterior = t.tTipo; // Pegar o sinal anterior
+            t = proximoToken();
+            if(t.tTipo == tAnterior){ //Se for o mesmo sinal do anterior
+                certo = 1;
+            }
+            break;
+        default:
+            break;
         }
     }
 
     if(certo == 0){
-        mensagemErro();
+        erroSintatico();
     }
     return certo;
 }
@@ -160,24 +279,24 @@ unsigned short int declaracao(){
     printf("Declaração - ");
     t = proximoToken();
     if( t.tTipo == 25 ){
-        certo = 1;
+        certo = 3;
         t = proximoToken();
-        while ( (t.tTipo == 21) && ( certo==1)  ){
+        while ( (t.tTipo == 21) && ( certo==3)  ){
             t = proximoToken();
             if(t.tTipo == 25){
-                certo = 1;
+                certo = 3;
             } else {
                 certo = 0;
             }
 
-            if(certo==1){
+            if(certo==3){
                 t = proximoToken();    
             }
         }
     }
 
     if(certo==0){
-        mensagemErro();
+        erroSintatico();
     }
     return certo;
 }
@@ -200,14 +319,13 @@ unsigned short int imprime(){
             if(certo == 1){
                 certo = 0;
                 if(t.tTipo==16){ // )
-                    certo = 1;
+                    certo = 4;
                 }
             }
         }
     }
-
     if(certo==0){
-        mensagemErro();
+        erroSintatico();
     }
     return certo;
 }
@@ -237,14 +355,14 @@ unsigned short int le(){
                 certo = 0;
                 t = proximoToken();
                 if(t.tTipo==16){
-                    certo = 1;
+                    certo = 5;
                 }
             }
         }
     }
 
     if(certo==0){
-        mensagemErro();
+        erroSintatico();
     }
     return certo;
 }
@@ -260,18 +378,12 @@ unsigned short int para(){
                 if(t.tTipo == 21){ //,
                     if(condicao() == 1){ // condição
                         if(t.tTipo == 21){ //,
-                            if(t.tTipo){ // Atribuição Incremental [Ainda não terminei]
+                            t = proximoToken();
+                            if(atribuicaoIncremental() == 1){ // Atribuição Incremental
                                 if(t.tTipo==16){ // )
-                                    t = proximoToken();
-                                    if(t.tTipo == 17){
-                                        //if(cmds()==1){
-                                            t = proximoToken();
-                                            if(t.tTipo == 18){
-                                                certo = 1;
-                                            }
-
-                                        //}
-                                    }   
+                                    if(cmds() == 11){
+                                        certo = 6;
+                                    }
                                 }
                             }
                         }
@@ -282,7 +394,7 @@ unsigned short int para(){
     }
 
     if(certo == 0){
-        mensagemErro();
+        erroSintatico();
     }
 }
 
@@ -294,23 +406,15 @@ unsigned short int enquanto(){
     if(t.tTipo == 15){ // (
         if(condicao()==1){ // condição
             if(t.tTipo==16){ // )
-                t = proximoToken();
-                if(t.tTipo == 17){
-                    //if(cmds()==1){
-                        
-                        t = proximoToken();
-                        if(t.tTipo == 18){
-                            certo = 1;
-                        }
-
-                    //}
+                if(cmds() == 11){
+                    certo = 7;
                 }
             }
         }
     }
 
     if(certo == 0){
-        mensagemErro();
+        erroSintatico();
     }
 
 }
@@ -319,64 +423,66 @@ unsigned short int enquanto(){
 
 unsigned short int se(){
     unsigned short int certo = 0;
-
     printf("Se - ");
     t = proximoToken();
     if(t.tTipo == 15){ // (
         if(condicao()==1){ // Condição
             if(t.tTipo == 16){ // )
-                t = proximoToken();
-                if(t.tTipo == 17){ // {
-                    //if(cmds()==1){ // Comandos           
-                        t = proximoToken();
-                        if( t.tTipo == 18 ){ // }
-                            certo = 1;
-                        }
-
-                        t = proximoToken();
-                        if(t.tTipo == 33){ // Senão
-                            certo = 0;
-                            t = proximoToken();
-                            if (t.tTipo == 17){ // {
-                                if(cmds()==1){
-                                    t = proximoToken();
-                                    if(t.tTipo == 18){
-                                        certo = 1;
-                                    }
-                                }
-                            }
-                            
-
-                        }
-                    //}
+                printf("\n");
+                if(cmds()==11){ // Bloco de Comandos       
+                    certo = 8;  
+                    cSe ++;      
+                }
+                
+                if(senao()==12){
+                    certo = 8;
                 }
             }
-            
         }
     }
 
     if(certo==0){
-        mensagemErro();
+        erroSintatico();
     }
 
+    return certo;
 }
+
+unsigned short int senao(){
+    unsigned short int certo=0;
+    if(cSe>0){    
+        printf("Senao - ");
+        printf("\n");
+        if(cmds() == 11){ // Bloco Senao
+            certo = 12;
+        }
+
+        if(certo==0){
+            erroSintatico();
+        }
+    }
+
+    return certo;
+}
+
 
 unsigned short int condicao(){
     unsigned short int certo = 0;
     printf("Condição - ");
-    if(t.tTipo==24){
+    t = proximoToken();
+    if(t.tTipo==24){ // 
         t = proximoToken();
     }
+
     if(expressaoCondicional()==1){
         certo = 1;
-        /*
         while (((t.tTipo==22) || (t.tTipo==23) ) && (certo == 1) ) {
             certo = 0;
             if(expressaoCondicional()==1){
                 certo = 1;
             }
         }
-        */
+        
     }
 
     return certo;
@@ -385,22 +491,18 @@ unsigned short int condicao(){
 unsigned short int expressaoCondicional(){
     unsigned short int certo = 0;
     printf("Expressão Condicional - ");
-    t = proximoToken();
     if(expressao()==1){
         switch (t.tTipo){
         case 9 ... 14: // Operador relacional
-            printf("Operador Relacional %d ", t.tTipo );
             t = proximoToken();
             if(expressao()==1){
                 certo = 1;
             }
-            
             break;
         default:
             break;
         }
     }
-
     return certo;
 
 }
@@ -465,7 +567,7 @@ unsigned short int fator(){
         //t = proximoToken();
         if(expressao() == 1){
             t = proximoToken();
-            printf("Saindo - ");           
+            //printf("Saindo - ");           
             //printf("Olha %d ", t.tTipo);
             if((t.tTipo == 16) ){
                 printf("Saindo - "); 
@@ -521,7 +623,7 @@ void transicao(unsigned short est, unsigned short ger, unsigned short f){
 
 void lerLinha (){
     token p;
-    if(abrirArquivo ("programa.txt") !=-1 ){
+    if(aberto == 1 ){
         while(fgets(buffers,MAX_LINHA,arq) != NULL){     
             /*
             if (cmds()==1){
@@ -622,7 +724,6 @@ token consumir(){
 
 token proximoToken(){
     // Consome espaços em brancos: (Espaço) e Tab (Tabulação)
-    
     t = consumir();
     while ( ( (t.tTipo==19) || (t.tTipo==20) )){
         t = consumir();
@@ -682,6 +783,9 @@ token automato(unsigned short Ccaracter){
             fim = 1;
             /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
+            case 10: //(Nova Linha)
+                transicao(0,36,fim);
+                break;
             case 48 ... 57 : // [0-9]
                 transicao(2,1,fim);
                 break;
@@ -736,7 +840,7 @@ token automato(unsigned short Ccaracter){
                 transicao(26,21,fim);
                 break;
             case 101: // e
-                transicao(68,22,fim);
+                transicao(68,25,fim);
                 break;
             case 111: // o
                 transicao(79,25,fim);
@@ -758,9 +862,6 @@ token automato(unsigned short Ccaracter){
                 break;
             case 112: // p
                 transicao(61,25,fim);
-                break;
-            case 10: //(Nova Linha)
-                transicao(81,25,fim);
                 break;
 
             //Demais Caracteres e undercore (_)
@@ -1388,7 +1489,7 @@ token automato(unsigned short Ccaracter){
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 110 : // n
-                transicao(62,25,1);
+                transicao(69,25,1);
                 break;
             default:
                 alfaNumerico(Ccaracter);
@@ -1548,17 +1649,19 @@ token automato(unsigned short Ccaracter){
 
 /* --------------------------------------------- ANALISADOR LÉXICO -----------------------------------------*/
 
-
-
-
 int main(){
+    unsigned short int certo;
     //lerLinha();
     
-    if(cmds()==1){
-        printf("Boas");
+    abrirArquivo();
+ 
+    if(cmds()==11){
+        printf("Tudo bem\n");
+    }else{
+        printf("Erro: Não fechou o bloco\n");
     }
-   
 
+    fecharArquivo();
 }
 
 
