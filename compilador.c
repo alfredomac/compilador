@@ -1663,6 +1663,3 @@ int main(){
 
     fecharArquivo();
 }
-
-
-
