@@ -4,7 +4,7 @@
 Este documento espelha a documentação do compilador MACUTUNDA, um projeto da disciplina de compilador. O compilador será constituído por 3 partes: analisador léxico, analisador sintático e analisador semântico.  
 - Analisador léxico: transforma os gerado.tValors (palavras da linguagem original em token);
 - Analisador sintático: analisa a estrutura das expressões;
-- Analisador semântico: analisa o sentido e a compatibilidade das expressões.  
+- Analisador semântico: analisa o sentido e a coerência das expressões.  
   
 O compilador será feita e traduzido para linguagem C.
 
@@ -28,11 +28,12 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas.
 
 ## 3. Analisador Sintático
+Está sendo usado o analisador sintático recursivo.
+
 ### 3.1 RF
 1. Reconhecer as frases escritas.
 
-### 3
-.2 Gramática
+### 3.2 Gramática
 
 As expressões regulares foram usadas para expressar a regra de formação de caracteres.
 - S -> CMDS   
