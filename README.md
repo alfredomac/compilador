@@ -11,7 +11,7 @@ O compilador será feita e traduzido para linguagem C.
 ## 2. Analisador Léxico
 ### 2.1 RF
 1. Ler caracter a partir de um ficheiro de texto
-2. Transformar os gerado.tValors em tokens.
+2. Transformar as palavras em tokens.
 
 ### 2.2 Expressões regulares
 
@@ -26,4 +26,29 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 
 ### 2.3 Autômato determinístico finito
 Os autômatos permitem expressar as expressões regulares e levar para mais próxima da implementação. Eles serão implementos a partir de uma tabela que fará correspondência entre os símbolos das classes envolvidas.
+
+## 3. Analisador Sintático
+### 3.1 RF
+1. Reconhecer as frases escritas.
+
+### 3
+.2 Gramática
+
+As expressões regulares foram usadas para expressar a regra de formação de caracteres.
+- S -> CMDS   
+- CMDS -> CMD {CMD}  
+- CMD -> se (CONDICAO) '{' CMDS '}' [senao'{' CMDS '}']    
+    | enquanto(CONDICAO)'{' CMDS '}'  
+    | para(ATRIBUICAO,CONDICAO,ATRINCREMENTAL) '{' CMDS '}'  
+    | le(id{,id})  
+    | imprime(EXPRESSAO{,EXPRESSAO})  
+    | ATRIBUICAO  
+    | DECLARACAO  
+- DECLARACAO -> real | inteiro | logico | literal id{,id}  
+- ATRIBUICAO -> id = expressao  
+- CONDICAO -> [nao] EXPCONDICIONAL {e | ou EXPCONDICIONAL}  
+- EXPCONDICIONAL -> EXPRESSAO >| >= | < | <= | == | !=  EXPRESSAO  
+- EXPRESSAO -> string| TERMO {+ | - TERMO}    
+- TERMO -> FATOR {* | / FATOR}   
+- FATOR -> '(' EXPRESSAO ')' | numero | id   
 
