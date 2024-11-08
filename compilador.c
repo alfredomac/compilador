@@ -2,7 +2,7 @@
 Programa: Compilador Macutunda
 Autor: Alfredo Macutunda
 Data de Início: 24/08/2024
-Última modificação: 05/11/2024 
+Última modificação: 07/11/2024 
 */
 
 #include <stdio.h>
@@ -10,29 +10,43 @@ Data de Início: 24/08/2024
 #include <string.h>
 
 #define MAX_LINHA 500
+#define MAX_CARACTERES 9
 
+// Estrutura para Token
 typedef struct Token {
     char tValor[MAX_LINHA];
     unsigned short tTipo;
 } token;
+
+
+// Estrutura para ID
+typedef struct ID id;
+struct ID {
+    token info;
+    unsigned short int idTipo;
+    id *prox;
+};
+
 
 FILE *arq;
 token gerado;
 token t; // Token a ser consumido
 
 char buffers[MAX_LINHA];
+id tabelaHash[MAX_CARACTERES]; // Tabela Hash
 int linhAtual = 0,colunaAtual = 0;
 unsigned short estado = 1,fim = 0,aux = 0;
 unsigned short aberto = 0; // Modifica se o arquivo está aberto
-unsigned short cSe = 0;
+unsigned short tipo = 0, tipoAnterior = 0;
+unsigned short cSe = 0; // Conta o núemro de Se's
 
 
 // Geral
 void abrirArquivo ();
 void fecharArquivo ();
+void limparString (char*);
 
 // Analisador Léxico
-
 void lerLinha ();
 void explorarLinha();
 void transicao(unsigned short , unsigned short, unsigned short);
@@ -62,6 +76,16 @@ unsigned short int termo();
 unsigned short int fator();
 void erroSintatico();
 
+// Analisador Semântico
+unsigned short int codigoHash(char *);
+void adicionarTabelaHash(token, unsigned short int);
+unsigned short int verTabelaHash(token);
+unsigned short int tabelaVazia(unsigned short int);
+id *criarId( token ident, unsigned short int);
+void erroSemantico(char *);
+
+
+
 /* --------------------------------------------- USO GERAL -----------------------------------------*/
 
 void fecharArquivo( ){
@@ -89,21 +113,77 @@ void limparString (char* cadeia){
 
 /* --------------------------------------------- USO GERAL -----------------------------------------*/
 
+/* --------------------------------------------- ANALISADOR SEMÂNTICO -----------------------------------------*/
+
+void erroSemantico(char* cadeia ){
+    printf("Erro (Semântico) na Ln %d Col %d - %s ", linhAtual+1, colunaAtual-1, cadeia);
+}
+
+id *criarId( token ident, unsigned short t){
+    id *p = (id *) malloc (sizeof(id));
+    p->prox = NULL;
+    p->info = ident;
+    p->idTipo = t;
+    return p;
+}
+
+unsigned short int tabelaVazia(unsigned short int indice){
+    if(tabelaHash[indice].prox == NULL){
+        return 1;
+    }
+    return 0;
+}
+
+unsigned short int codigoHash (char* cadeia){
+    if(strlen(cadeia) > MAX_CARACTERES ){
+        return 9;
+    }
+    return strlen(cadeia-1);
+}
+
+void adicionarTabelaHash(token ident, unsigned short int t){
+    unsigned short int indice = codigoHash(ident.tValor);
+    id *p ;
+    id *pNovo;
+    p = tabelaHash[indice].prox;
+    pNovo = criarId(ident,t);
+    tabelaHash[indice].prox = pNovo;
+    if(tabelaVazia(indice)==0){
+        pNovo->prox = p;
+    }
+
+}
+
+unsigned short int verTabelaHash(token ident){
+    id *p;
+    unsigned short int indice = codigoHash(ident.tValor);
+    if( tabelaVazia(indice) == 0 ){
+        p = tabelaHash[indice].prox;
+        while ( p != NULL ) {
+            if( strcmp(ident.tValor, p->info.tValor) == 0  ){
+                return  p->idTipo;
+            }
+            p = p->prox;
+        }
+    }
+    return 0;
+}
+
+
+/* --------------------------------------------- ANALISADOR SEMÂNTICO -----------------------------------------*/
+
+
 
 /* --------------------------------------------- ANALISADOR SINTÁTICO -----------------------------------------*/
 
 void erroSintatico(){
-    printf("Erro (sintático) na Ln %d Col %d", linhAtual+1, colunaAtual-1);
+    printf("Erro (sintático) na Ln %d Col %d ", linhAtual+1, colunaAtual-1);
 }
-
-
-
 
 unsigned short int cmds(){
     unsigned short int certo = 0;
     printf("CMDS\n");
     if(aberto == 1 ){
-
         if(fgets(buffers,MAX_LINHA,arq) != NULL){
             certo = cmd();  
             // Enquanto for atribuição ou nova linha
@@ -150,6 +230,8 @@ unsigned short int cmd(){
     11 - Fechar Bloco
     12 - Senao
     */
+    tipo = 0;
+    tipoAnterior = 26;
 
     colunaAtual = 0;
     printf("CMD - ");
@@ -209,31 +291,45 @@ unsigned short int cmd(){
 }
 
 unsigned short int atribuicao(){
-    unsigned short int tAnterior, certo = 0 ; //certo
+    unsigned short int certo = 0; //certo
+    unsigned short int tipoV, tipoE,  tAnterior ;
+    
     printf("Atribuição - ");
-    t = proximoToken();
-    switch (t.tTipo){
-    case 8: // =
+    tipoV = verTabelaHash(t);
+    if(tipoV != 0 ){
         t = proximoToken();
-        if(expressao()==1){
-            certo = 2;
+        switch (t.tTipo){
+        case 8: // =
+            t = proximoToken();
+            tipoE = expressao();
+            if( tipoV == tipoE ){
+                certo = 2;
+            } else{
+                erroSemantico("Tipos Incompatíveis");
+                if(tipoE!=0){
+                    certo = 2;
+                }
+            }
+            break;
+        case 4: // + 
+        case 5: // -
+            tAnterior = t.tTipo; // Pegar o sinal anterior
+            t = proximoToken();
+            if(t.tTipo == tAnterior){ //Se for o mesmo sinal do anterior
+                certo = 2;
+            }
+            break;
+        default:
+            break;
         }
-        break;
-    case 4: // + 
-    case 5: // -
-        tAnterior = t.tTipo; // Pegar o sinal anterior
-        t = proximoToken();
-        if(t.tTipo == tAnterior){ //Se for o mesmo sinal do anterior
-            certo = 2;
+
+        if(certo == 0){
+            erroSintatico();
         }
-        break;
-    default:
-        break;
+    }else{
+        erroSemantico("Variável não declarada");
     }
 
-    if(certo == 0){
-        erroSintatico();
-    }
     return certo;
 }
 
@@ -275,16 +371,19 @@ unsigned short int atribuicaoIncremental(){
 }
 
 unsigned short int declaracao(){
-    unsigned short int certo = 0 ; //certo?
+    unsigned short int certo = 0 ; //certo
+    unsigned short int tipo = t.tTipo;
     printf("Declaração - ");
     t = proximoToken();
     if( t.tTipo == 25 ){
         certo = 3;
+        adicionarTabelaHash(t,tipo);
         t = proximoToken();
         while ( (t.tTipo == 21) && ( certo==3)  ){
             t = proximoToken();
             if(t.tTipo == 25){
                 certo = 3;
+                adicionarTabelaHash(t,tipo);
             } else {
                 certo = 0;
             }
@@ -307,7 +406,7 @@ unsigned short int imprime(){
     t = proximoToken();
     if(t.tTipo = 15){ // (
         t = proximoToken();
-        if( expressao() == 1){
+        if( expressao() != 0){
             certo = 1;
             while ( (t.tTipo == 21) && (certo==1)  ){
                 certo = 0;
@@ -416,9 +515,7 @@ unsigned short int enquanto(){
     if(certo == 0){
         erroSintatico();
     }
-
 }
-
 
 
 unsigned short int se(){
@@ -491,11 +588,11 @@ unsigned short int condicao(){
 unsigned short int expressaoCondicional(){
     unsigned short int certo = 0;
     printf("Expressão Condicional - ");
-    if(expressao()==1){
+    if(expressao()!=0){
         switch (t.tTipo){
         case 9 ... 14: // Operador relacional
             t = proximoToken();
-            if(expressao()==1){
+            if(expressao()!=0){
                 certo = 1;
             }
             break;
@@ -509,53 +606,58 @@ unsigned short int expressaoCondicional(){
 
 unsigned short expressao(){
     printf("Expressão - ");
-    unsigned short int certo = 0;
+
     if(t.tTipo==3){
         printf("String - ");
-        certo = 1;
+        tipoAnterior = 28; // Literal
         t = proximoToken();
     }else{
-        if(termo() == 1){
-            certo = 1;
-            while(((t.tTipo==4) || (t.tTipo==5) ) && (certo==1) ){
+        tipo = termo();
+
+        if(tipo != 0){
+            while(((t.tTipo==4) || (t.tTipo==5) ) && (tipo!=0) ){
                 printf("Adição - ");
-                certo = 0;
-                if(termo()==1){
-                    certo = 1;
-                    t = proximoToken();
+                t = proximoToken();
+                tipo = termo();
+                if(tipo != tipoAnterior){
+                    if(tipo == 27){
+                        tipoAnterior = tipo;
+                    }
                 }
+                
             }
         }
     }
     
-    return certo;
+    return tipoAnterior;
 }
 
 unsigned short int termo(){
     printf("Termo - ");
-    unsigned short int certo = 0;
-    if(fator()==1){
-        certo = 1;
-        while( ((t.tTipo==6) || (t.tTipo==7) ) && (certo==1) ){
+    tipo = fator(); // Pegar o tipo retornado
+    if(tipo != 0){
+        while( ((t.tTipo==6) || (t.tTipo==7) ) && (tipo!=0) ){
             printf("Multiplicação - ");
-            certo = 0;
-            if(fator()==1){
-                certo = 1;
-                t = proximoToken();
+            t = proximoToken();
+            tipo = fator();
+            if(tipo != tipoAnterior){
+                if(tipo == 27){
+                    tipoAnterior = tipo;
+                }
             }
         }
     }
-    return certo;
+    return tipoAnterior;
 }
 
 unsigned short int fator(){
     printf("Fator - ");
     unsigned short int certo=0;
     switch (t.tTipo){
-    case 1:
+    case 1: 
     case 2: 
         printf("Número - ");
-        certo = 1;
+        tipo = t.tTipo+25; // Tipos = {Inteiro: 26, Real: 27}, por isso somou-se com 25
         break;
     case 25:
         printf("Id - ");
@@ -564,14 +666,13 @@ unsigned short int fator(){
     case 15:
         printf("Parenteses - ");
         printf("Entrando - ");
-        //t = proximoToken();
-        if(expressao() == 1){
-            t = proximoToken();
-            //printf("Saindo - ");           
-            //printf("Olha %d ", t.tTipo);
-            if((t.tTipo == 16) ){
+        t = proximoToken();
+        tipo = expressao();
+        if(tipo != 0){
+            if(t.tTipo == 16){
                 printf("Saindo - "); 
-                certo=1;
+            }else{
+                tipo = 0;
             }
         }
         break;
@@ -580,8 +681,7 @@ unsigned short int fator(){
     }
 
     t = proximoToken();
-
-    return certo;
+    return tipo;
 }
 
 /* --------------------------------------------- ANALISADOR SINTÁTICO -----------------------------------------*/

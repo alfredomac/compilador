@@ -53,3 +53,15 @@ As expressões regulares foram usadas para expressar a regra de formação de ca
 - TERMO -> FATOR {* | / FATOR}   
 - FATOR -> '(' EXPRESSAO ')' | numero | id   
 
+## 4. Analisador Semântico
+Está sendo usado o analisador sintático recursivo.
+
+### 3.1 RF
+1. Verificar a coerência das frases escritas.
+
+### 3.2 Tabela Hash
+As variáveis terão no máximo 10 caracteres.
+O código Hash é o número de caracteres. A tabela está sendo implementada atráves de uma vetor de 10 posições e uma lista candadeada para caso de um conjunto de ID's  terem o mesmo código Hash (número de caracteres).
+
+Só variáveis inteiras podem estar na Atribuição Incremental
+
