@@ -24,7 +24,7 @@ De caracter a caracter, as expressões regulares expressam as regreas para forma
 - Operadores Aritméticos: {“+”, “-”,”*”,”/”,”=”}
 - Operadores Comparação: {“==”,”!=”,">",">=","<","<="}
 - Operadores lógicos: {"nao","ou","e"}
-- Palavras chave: {“se”,“enquanto”,”inteiro”,”real”, “literal”, "logico","le", "para"}
+- Palavras chave: {“se”,“enquanto”,”inteiro”,”real”, “literal”, "logico","le", "para","imprime"}
 
 ### 2.3 Autômato determinístico finito
 Os autômatos permitem representar as expressões regulares e levar para mais próxima da implementação. 
@@ -66,7 +66,45 @@ Analisador semântico é reponsável por denotar a coerência dentro da frases.
 ### 4.1 RF
 1. Verificar a coerência das frases escritas.
 
-### 4.2 Tabela Hash
+### 4.2 Regras Semânticas
+
+Atribuição  
+- {id:inteiro, e:inteiro| id = e : inteiro}
+- {id:real, e:inteiro| id = e : real}
+- {id:real, e:real| id = e : real}
+- {id:literal, e:literal| id = e : literal}
+
+Atribuição Incrementral
+- {id:inteiro| id++ : inteiro}
+- {id:inteiro| id-- : inteiro}
+
+Soma  
+- {e1:inteiro, e2:inteiro| e1 + e2 : inteiro}
+- {e1:real, e2:inteiro| e1 + e2 : real}
+- {e1:inteiro, e2:real| e1 + e2 : real}
+- {e1:real, e2:real| e1 + e2 : real}
+
+Subtração  
+- {e1:inteiro, e2:inteiro| e1 - e2 : inteiro}
+- {e1:real, e2:inteiro| e1 - e2 : real}
+- {e1:inteiro, e2:real| e1 - e2 : real}
+- {e1:real, e2:real| e1 - e2 : real}
+
+Multiplicação  
+- {e1:inteiro, e2:inteiro| e1 * e2 : inteiro}
+- {e1:real, e2:inteiro| e1 * e2 : real}
+- {e1:inteiro, e2:real| e1 * e2 : real}
+- {e1:real, e2:real| e1 * e2 : real}
+
+Divisão  
+- {e1:inteiro, e2:inteiro| e1 / e2 : real}
+- {e1:real, e2:inteiro| e1 + e2 : real}
+- {e1:inteiro, e2:real| e1 + e2 : real}
+- {e1:real, e2:real| e1 + e2 : real}
+
+
+
+### 4.3 Tabela Hash
 
 Atribuição de valor incompatíveis é um caso do analisador semântico.
 

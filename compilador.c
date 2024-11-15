@@ -39,6 +39,7 @@ unsigned short estado = 1,fim = 0,aux = 0;
 unsigned short aberto = 0; // Modifica se o arquivo está aberto
 unsigned short tipo = 0, tipoAnterior = 0;
 unsigned short cSe = 0; // Conta o núemro de Se's
+unsigned short cP = 0; // Conta o núemro de Parênteses
 
 
 // Geral
@@ -197,12 +198,9 @@ unsigned short int cmds(){
         }
 
         if(certo == 10){
-            
-            //while(fgets(buffers,MAX_LINHA,arq) != NULL){  
             while ( (certo!=11) && (certo!=0)){
                 if(fgets(buffers,MAX_LINHA,arq) != NULL ){
                     certo = cmd();
-                    //if (cmd()!=0){
                 }else{
                     certo = 0;
                 }
@@ -231,7 +229,7 @@ unsigned short int cmd(){
     12 - Senao
     */
     tipo = 0;
-    tipoAnterior = 26;
+    tipoAnterior = 0;
 
     colunaAtual = 0;
     printf("CMD - ");
@@ -271,11 +269,15 @@ unsigned short int cmd(){
         break;
     case 17: // {
         printf("Abrir Bloco - ");
+        cP++;
         e = 10;
         break;      
     case 18: // }
-        printf("Fechar Bloco - ");
-        e = 11;
+        if(cP>0){
+            printf("Fechar Bloco - ");
+            cP--;
+            e = 11;
+        }
         break;
     default:
         erroSintatico();
@@ -302,7 +304,7 @@ unsigned short int atribuicao(){
         case 8: // =
             t = proximoToken();
             tipoE = expressao();
-            if( tipoV == tipoE ){
+            if( tipoV >= tipoE ){
                 certo = 2;
             } else{
                 erroSemantico("Tipos Incompatíveis");
@@ -313,11 +315,15 @@ unsigned short int atribuicao(){
             break;
         case 4: // + 
         case 5: // -
+            if(tipoV != 26 ){
+                erroSemantico("Atribuicao Incremental e para inteiro");
+            }
+
             tAnterior = t.tTipo; // Pegar o sinal anterior
             t = proximoToken();
             if(t.tTipo == tAnterior){ //Se for o mesmo sinal do anterior
                 certo = 2;
-            }
+            }            
             break;
         default:
             break;
@@ -337,6 +343,10 @@ unsigned short int atribuicaoIncremental(){
     unsigned short int tAnterior, certo = 0 ; 
     printf("Atribuição Incremental - ");
     if (t.tTipo == 25){ // id
+        if(verTabelaHash(t) != 26){
+            erroSemantico("Atribuicao Incremental e para inteiro");
+        }
+    
         t = proximoToken();
         switch (t.tTipo){
         case 8: // =
@@ -527,12 +537,12 @@ unsigned short int se(){
             if(t.tTipo == 16){ // )
                 printf("\n");
                 if(cmds()==11){ // Bloco de Comandos       
-                    certo = 8;  
-                    cSe ++;      
-                }
-                
-                if(senao()==12){
-                    certo = 8;
+                    certo = 0;  
+                    cSe++;      
+                    if(senao()==12){
+                        certo = 8;
+                    }
+                    cSe--;
                 }
             }
         }
@@ -541,7 +551,6 @@ unsigned short int se(){
     if(certo==0){
         erroSintatico();
     }
-
     return certo;
 }
 
@@ -550,15 +559,16 @@ unsigned short int senao(){
     if(cSe>0){    
         printf("Senao - ");
         printf("\n");
-        if(cmds() == 11){ // Bloco Senao
+        certo = cmds();
+        if( (certo==11) ||  (certo==12) ){ // Bloco Senao
             certo = 12;
         }
 
-        if(certo==0){
+        if(certo!=12){
+            certo = 0;
             erroSintatico();
         }
     }
-
     return certo;
 }
 
@@ -567,12 +577,13 @@ unsigned short int condicao(){
     unsigned short int certo = 0;
     printf("Condição - ");
     t = proximoToken();
-    if(t.tTipo==24){ // 
+    if(t.tTipo==24){ // nao
         t = proximoToken();
     }
 
     if(expressaoCondicional()==1){
         certo = 1;
+        printf("<%s>", t.tValor);
         while (((t.tTipo==22) || (t.tTipo==23) ) && (certo == 1) ) {
             certo = 0;
             if(expressaoCondicional()==1){
@@ -581,14 +592,16 @@ unsigned short int condicao(){
         }
         
     }
-
     return certo;
 }
 
 unsigned short int expressaoCondicional(){
     unsigned short int certo = 0;
     printf("Expressão Condicional - ");
-    if(expressao()!=0){
+    certo = expressao();
+    printf("Operador %d", certo);
+    if(certo!=0){
+        certo = 0;
         switch (t.tTipo){
         case 9 ... 14: // Operador relacional
             t = proximoToken();
@@ -601,49 +614,47 @@ unsigned short int expressaoCondicional(){
         }
     }
     return certo;
-
 }
 
 unsigned short expressao(){
     printf("Expressão - ");
-
     if(t.tTipo==3){
         printf("String - ");
         tipoAnterior = 28; // Literal
         t = proximoToken();
     }else{
         tipo = termo();
-
-        if(tipo != 0){
-            while(((t.tTipo==4) || (t.tTipo==5) ) && (tipo!=0) ){
-                printf("Adição - ");
-                t = proximoToken();
-                tipo = termo();
-                if(tipo != tipoAnterior){
-                    if(tipo == 27){
-                        tipoAnterior = tipo;
-                    }
+        if(tipoAnterior!=27){
+            tipoAnterior = tipo;
+        }
+        while( (t.tTipo==4) || (t.tTipo==5) ){
+            printf("Adição - ");
+            t = proximoToken();
+            tipo = termo();
+            if((tipo!=26) && (tipo!=27)){
+                if(tipo == 27){
+                    tipoAnterior = tipo;
                 }
-                
             }
         }
     }
-    
     return tipoAnterior;
 }
 
 unsigned short int termo(){
     printf("Termo - ");
     tipo = fator(); // Pegar o tipo retornado
-    if(tipo != 0){
-        while( ((t.tTipo==6) || (t.tTipo==7) ) && (tipo!=0) ){
-            printf("Multiplicação - ");
-            t = proximoToken();
-            tipo = fator();
-            if(tipo != tipoAnterior){
-                if(tipo == 27){
-                    tipoAnterior = tipo;
-                }
+    if(tipoAnterior!=27){
+        tipoAnterior = tipo;
+    }
+    while( (t.tTipo==6) || (t.tTipo==7) ){
+        printf("Multiplicação - ");
+        t = proximoToken();
+        tipo = fator();
+        if((tipo==26) || (tipo==27)){
+            tipoAnterior = tipo;
+            if(tipo == 27){
+                tipoAnterior = tipo;
             }
         }
     }
@@ -661,7 +672,11 @@ unsigned short int fator(){
         break;
     case 25:
         printf("Id - ");
-        certo = 1;
+        tipo = verTabelaHash(t) ; // Enviar o tipo da variável
+        if(tipo==0){
+            erroSemantico("Variavel nao declarada");
+            tipo = 26;
+        }
         break;
     case 15:
         printf("Parenteses - ");
@@ -940,7 +955,7 @@ token automato(unsigned short Ccaracter){
                 transicao(26,21,fim);
                 break;
             case 101: // e
-                transicao(68,25,fim);
+                transicao(68,22,fim);
                 break;
             case 111: // o
                 transicao(79,25,fim);
@@ -1278,7 +1293,7 @@ token automato(unsigned short Ccaracter){
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 114 : // r
-                transicao(30,25,1);
+                transicao(41,25,1);
                 break;
             default:
                 alfaNumerico(Ccaracter);
@@ -1304,7 +1319,7 @@ token automato(unsigned short Ccaracter){
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
             case 108 : // l
-                transicao(43,25,1);
+                transicao(43,28,1);
                 break;
             default:
                 alfaNumerico(Ccaracter);
@@ -1314,11 +1329,8 @@ token automato(unsigned short Ccaracter){
         /* ---------------- Caracteres do Estado -------------------*/
 
         case 43:
-        /* ---------------- Caracteres do Estado -------------------*/
-           alfaNumerico(Ccaracter);
-        break;
-        /* ---------------- Caracteres do Estado -------------------*/
-
+        /* ---------------- Caracteres do Estado -------------------*/    
+            alfaNumerico(Ccaracter);
         case 44:
         /* ---------------- Caracteres do Estado -------------------*/
             switch (Ccaracter){
@@ -1755,7 +1767,7 @@ int main(){
     
     abrirArquivo();
  
-    if(cmds()==11){
+    if( (cmds()==11) || (cP==0) ){
         printf("Tudo bem\n");
     }else{
         printf("Erro: Não fechou o bloco\n");
