@@ -110,6 +110,3 @@ Atribuição de valor incompatíveis é um caso do analisador semântico.
 
 As variáveis terão no máximo 10 caracteres.
 O código Hash é o número de caracteres. A tabela está sendo implementada atráves de uma vetor de 10 posições e uma lista candadeada para caso de um conjunto de ID's  terem o mesmo código Hash (número de caracteres).
-
-Só variáveis inteiras podem estar na Atribuição Incremental
-
