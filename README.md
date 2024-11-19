@@ -61,10 +61,10 @@ A gramática, permite o estabelecimento das possíveis frases (estrutura) na lin
 - FATOR -> '(' EXPRESSAO ')' | numero | id   
 
 ## 4. Analisador Semântico
-Analisador semântico é reponsável por denotar a coerência dentro da frases.
+Analisador semântico é reponsável por denotar a coerência dentro das frases.
 
 ### 4.1 RF
-1. Verificar a coerência das frases escritas.
+1. Verificar a coerência nas frases.
 
 ### 4.2 Regras Semânticas
 
